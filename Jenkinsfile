@@ -5,10 +5,10 @@ pipeline {
     }
     parameters {
         string(name: 'DOCKER_IMAGE_NAME', defaultValue: 'coorg_sak_spring', description: 'Docker image name')
+        string(name: 'DOCKERHUB_USERNAME', defaultValue: 'sakit333', description: 'Docker Hub Username')
+        string(name: 'DOCKER_TAG', defaultValue: "${env.BUILD_ID}", description: 'Docker image tag')
         choice(name: 'DEPLOY_ENV', choices: ['dev', 'prod'], description: 'Select the deployment environment')
         choice(name: 'ACTION', choices: ['deploy', 'remove'], description: 'Select the action')
-        string(name: 'DOCKER_TAG', defaultValue: "${env.BUILD_ID}", description: 'Docker image tag')
-        string(name: 'DOCKERHUB_USERNAME', defaultValue: 'sakit333', description: 'Docker Hub Username')
     }
     environment {
         DOCKERHUB_USERNAME = "${params.DOCKERHUB_USERNAME}"
@@ -113,8 +113,6 @@ pipeline {
                 echo "Deploying to the Dev Environment....!!!!"
                 sh '''
                 NETWORK_NAME="mysql_db_docker_mysql-network"
-
-                # Check if the network exists; if not, create it
                 if sudo docker network inspect "$NETWORK_NAME" >/dev/null 2>&1; then
                 echo "Network '$NETWORK_NAME' exists. Attaching container to it..."
                 else
@@ -122,8 +120,6 @@ pipeline {
                 sudo docker network create "$NETWORK_NAME"
                 echo "Network '$NETWORK_NAME' created successfully."
                 fi
-
-                # Run the container attached to the network
                 sudo docker run -d --name spring_app_container --network "$NETWORK_NAME" -p 8088:8088 ${DOCKERHUB_USERNAME}/${DOCKER_IMAGE}:latest
                 '''
             }
@@ -151,23 +147,18 @@ pipeline {
                 }
             }
             steps {
-                echo "🧹 Removing all Docker images locally..."
+                echo "Removing all Docker images locally..."
                 sh '''
-                echo "🔍 Searching for all tags of ${DOCKERHUB_USERNAME}/${DOCKER_IMAGE}..."
-
-                # Remove all tags of the app image
+                echo "Searching for all tags of ${DOCKERHUB_USERNAME}/${DOCKER_IMAGE}..."
                 IMAGES=$(sudo docker images "${DOCKERHUB_USERNAME}/${DOCKER_IMAGE}" --format "{{.Repository}}:{{.Tag}}")
-
                 if [ -n "$IMAGES" ]; then
-                echo "🗑️  Removing the following images:"
+                echo "Removing the following images:"
                 echo "$IMAGES"
                 echo "$IMAGES" | xargs -r sudo docker rmi -f
                 else
-                echo "⚠️  No images found for ${DOCKERHUB_USERNAME}/${DOCKER_IMAGE}, skipping..."
+                echo "No images found for ${DOCKERHUB_USERNAME}/${DOCKER_IMAGE}, skipping..."
                 fi
-
-                # Remove base image if present
-                echo "🗑️  Removing base image eclipse-temurin:17-jdk-alpine (if exists)..."
+                echo "Removing base image eclipse-temurin:17-jdk-alpine (if exists)..."
                 sudo docker rmi -f eclipse-temurin:17-jdk-alpine || echo "⚠️  Base image not found, skipping..."
                 '''
             }
