@@ -12,7 +12,7 @@ services:
       - nexus-data:/nexus-data
       - ./nexus-init:/opt/sonatype/nexus/etc/scripts
     environment:
-      - NEXUS_SECURITY_RANDOMPASSWORD=false
+      - INSTALL4J_ADD_VM_PARAMS=-Dnexus.scripts.allowCreation=true
     restart: unless-stopped
     networks:
       - sak-network

@@ -1,49 +1,83 @@
 pipeline {
     agent any
+
     parameters {
-        choice(name: 'ACTION', choices: ['start', 'stop', 'terminate'], description: 'Choose what to do with the Nexus Repository container')
+        choice(
+            name: 'ACTION',
+            choices: ['start', 'stop', 'terminate'],
+            description: 'Choose what to do with the Nexus Repository container'
+        )
     }
+
     environment {
         COMPOSE_FILE = 'nexus_repo_docker/docker-compose.yml'
+        NETWORK_NAME = 'sak-network'
     }
+
     stages {
+        stage('Validate Network') {
+            when { expression { params.ACTION == 'start' } }
+            steps {
+                echo "🔍 Checking if Docker network '${NETWORK_NAME}' exists..."
+                sh '''
+                if sudo docker network inspect ${NETWORK_NAME} >/dev/null 2>&1; then
+                  echo "✅ Network '${NETWORK_NAME}' already exists."
+                else
+                  echo "⚙️  Network '${NETWORK_NAME}' not found. Creating it now..."
+                  sudo docker network create ${NETWORK_NAME}
+                fi
+                '''
+            }
+        }
+
         stage('Build Nexus Image') {
             when { expression { params.ACTION == 'start' } }
             steps {
                 echo "🛠️ Building Nexus Repository image..."
-                sh 'sudo docker-compose -f ${COMPOSE_FILE} build nexus'
+                sh "sudo docker-compose -f ${COMPOSE_FILE} build nexus"
             }
         }
+
         stage('Start Nexus Container') {
             when { expression { params.ACTION == 'start' } }
             steps {
                 echo "🚀 Starting Nexus Repository container..."
-                sh 'sudo docker-compose -f ${COMPOSE_FILE} up -d nexus'
+                sh "sudo docker-compose -f ${COMPOSE_FILE} up -d nexus"
             }
         }
+
         stage('Stop Nexus Container') {
             when { expression { params.ACTION == 'stop' } }
             steps {
                 echo "🛑 Stopping Nexus Repository container..."
-                sh 'sudo docker-compose -f ${COMPOSE_FILE} stop nexus'
+                sh "sudo docker-compose -f ${COMPOSE_FILE} stop nexus"
             }
         }
+
         stage('Terminate Nexus Container') {
             when { expression { params.ACTION == 'terminate' } }
             steps {
-                echo "❌ Removing Nexus Repository container and volume..."
-                sh 'sudo docker-compose -f ${COMPOSE_FILE} down -v'
-                sh 'sudo docker rmi -f sonatype/nexus3 || echo "Nexus image not found, skipping..."'
-                sh 'sudo docker rmi -f nexus_repo_docker_nexus || echo "Nexus custom image not found, skipping..."'
+                echo "❌ Removing Nexus Repository container, image, and volumes..."
+                sh '''
+                sudo docker-compose -f ${COMPOSE_FILE} down -v || true
+
+                echo "🧹 Cleaning up Nexus images..."
+                sudo docker rmi -f sonatype/nexus3 || echo "⚠️ Base image not found, skipping..."
+                sudo docker rmi -f nexus_repo_docker_nexus || echo "⚠️ Custom Nexus image not found, skipping..."
+                '''
             }
         }
+
         stage('Show Nexus Status') {
             steps {
-                echo "📦 Nexus Repository container status:"
-                sh 'sudo docker-compose -f ${COMPOSE_FILE} ps'
+                echo "📦 Current Nexus Repository container status:"
+                sh "sudo docker-compose -f ${COMPOSE_FILE} ps"
+                echo "🌐 Current Docker networks:"
+                sh "sudo docker network ls | grep ${NETWORK_NAME} || true"
             }
         }
     }
+
     post {
         success {
             echo "✅ Pipeline completed successfully for action: '${params.ACTION}'"

@@ -1,0 +1,13 @@
+import org.sonatype.nexus.security.user.UserManager
+import org.sonatype.nexus.security.user.User
+
+def userManager = container.lookup(UserManager.class.name)
+def adminUser = userManager.getUser("admin")
+
+if (adminUser != null) {
+    log.info("🔐 Setting admin password to 'admin'")
+    adminUser.setPassword("admin")
+    userManager.updateUser(adminUser)
+} else {
+    log.warn("⚠️ Admin user not found — cannot reset password.")
+}
