@@ -33,6 +33,8 @@ pipeline {
             steps {
                 echo "Removing MySQL container, network, and volume..."
                 sh 'sudo docker-compose -f ${COMPOSE_FILE} down -v'
+                sh 'sudo docker rmi -f mysql_db_docker_mysql || echo "MySQL image not found, skipping..."'
+                sh 'sudo docker rmi -f mysql:8.0 || echo "Base MySQL image not found, skipping..."'
             }
         }
         stage('Show MySQL Status') {
