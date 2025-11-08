@@ -139,7 +139,8 @@ pipeline {
             steps {
                 echo "Removing all the images Locally....!!!!"
                 sh '''
-                sudo docker rmi ${DOCKERHUB_USERNAME}/${DOCKER_IMAGE}:latest || echo "Image not found, skipping..."
+                sudo docker rmi -f ${DOCKERHUB_USERNAME}/${DOCKER_IMAGE}:latest || echo "Image not found, skipping..."
+                sudo docker rmi -f eclipse-temurin:17-jdk-alpine || echo "Image not found, skipping..."
                 '''
             }
         }
