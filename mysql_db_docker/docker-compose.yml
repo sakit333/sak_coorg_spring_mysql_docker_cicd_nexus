@@ -1,0 +1,22 @@
+version: "3.9"
+
+services:
+  mysql:
+    build:
+      context: ./mysql_db_docker
+    container_name: mysql-container
+    environment:
+      MYSQL_ROOT_PASSWORD: 1234
+      MYSQL_DATABASE: myapplication
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - mysql-network
+
+networks:
+  mysql-network:
+
+volumes:
+  mysql_data:
