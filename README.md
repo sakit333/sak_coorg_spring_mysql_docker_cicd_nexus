@@ -20,6 +20,13 @@ This project demonstrates how to Dockerize a Spring Boot application connected t
 
 ---
 
+## System Requirements
+- ubuntu 24.04 LTS
+- 2 CPU + 4 GB RAM
+- Install - **java-17, jenkins, docker**
+- Jenkins Tools: **maven**
+- Jenkins Plugins: **stage view**
+
 ## Prerequisites
 
 - Jenkins installed with Docker and Maven available on the agent node  
