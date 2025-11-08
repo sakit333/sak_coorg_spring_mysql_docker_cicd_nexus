@@ -49,35 +49,46 @@ pipeline {
             when { expression { params.ACTION == 'start' } }
             steps {
                 script {
-                    echo "⏳ Waiting 2 minutes for Nexus to fully start..."
+                    echo "⏳ Waiting 2 minutes for Nexus to initialize..."
                     sleep time: 2, unit: 'MINUTES'
-
                     echo "🔐 Checking if Nexus container is running..."
                     def containerId = sh(
                         script: "sudo docker ps -qf 'name=nexus-repo'",
                         returnStdout: true
                     ).trim()
-
                     if (!containerId) {
                         echo "⚠️ Nexus container is not running. Skipping admin password retrieval."
                         return
                     }
-
-                    echo "✅ Nexus container is running. Retrieving admin password..."
+                    echo "✅ Nexus container is running. Waiting for admin.password file..."
+                    timeout(time: 5, unit: 'MINUTES') {
+                        waitUntil {
+                            def fileExists = sh(
+                                script: "sudo docker exec ${containerId} sh -c 'test -f /nexus-data/admin.password && echo exists || echo missing'",
+                                returnStdout: true
+                            ).trim()
+                            if (fileExists == "exists") {
+                                echo "✅ admin.password file found."
+                                return true
+                            }
+                            echo "⏳ Still waiting for Nexus to generate admin.password..."
+                            sleep 10
+                            return false
+                        }
+                    }
                     def adminPassword = sh(
-                        script: "sudo docker exec -it ${containerId} cat /nexus-data/admin.password 2>/dev/null || echo 'Password file not found'",
+                        script: "sudo docker exec ${containerId} cat /nexus-data/admin.password",
                         returnStdout: true
                     ).trim()
-
                     echo "\n================ Nexus Admin Credentials ================"
                     echo "👤 Username: admin"
                     echo "🔑 Password: ${adminPassword}"
                     echo "==========================================================\n"
-
                     input message: "📋 Copy the above password and click 'Proceed' when ready."
                 }
             }
         }
+
         stage('Stop Nexus Container') {
             when { expression { params.ACTION == 'stop' } }
             steps {
