@@ -25,6 +25,12 @@ pipeline {
 
     stages {
         stage('To Build Jar file'){
+            when {
+                allOf {
+                    expression { params.DEPLOY_ENV == 'dev' }
+                    expression { params.ACTION == 'deploy' }
+                }
+            }
             steps{
                 sh 'mvn clean package -Dskiptests'
             }
@@ -53,6 +59,18 @@ pipeline {
                 sudo docker rmi ${DOCKERHUB_USERNAME}/${DOCKER_IMAGE}:latest || echo "Image not found, skipping..."
                 sudo docker system prune -af
                 '''
+            }
+        }
+        stage('Remove Jar Build') {
+            when {
+                allOf {
+                    expression { params.DEPLOY_ENV == 'dev' }
+                    expression { params.ACTION == 'remove' }
+                }
+            }
+            steps {
+                echo 'Removing Target Dir from the maven project'
+                sh 'mvn clean'
             }
         }
     }
