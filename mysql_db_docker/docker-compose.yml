@@ -13,10 +13,12 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
     networks:
-      - mysql-network
+      - sak-network
 
 networks:
-  mysql-network:
+  sak-network:
+    driver: bridge
+    name: sak-network
 
 volumes:
   mysql_data:

@@ -1,0 +1,56 @@
+pipeline {
+    agent any
+    parameters {
+        choice(name: 'ACTION', choices: ['start', 'stop', 'terminate'], description: 'Choose what to do with the Nexus Repository container')
+    }
+    environment {
+        COMPOSE_FILE = 'nexus_repo_docker/docker-compose.yml'
+    }
+    stages {
+        stage('Build Nexus Image') {
+            when { expression { params.ACTION == 'start' } }
+            steps {
+                echo "🛠️ Building Nexus Repository image..."
+                sh 'sudo docker-compose -f ${COMPOSE_FILE} build nexus'
+            }
+        }
+        stage('Start Nexus Container') {
+            when { expression { params.ACTION == 'start' } }
+            steps {
+                echo "🚀 Starting Nexus Repository container..."
+                sh 'sudo docker-compose -f ${COMPOSE_FILE} up -d nexus'
+            }
+        }
+        stage('Stop Nexus Container') {
+            when { expression { params.ACTION == 'stop' } }
+            steps {
+                echo "🛑 Stopping Nexus Repository container..."
+                sh 'sudo docker-compose -f ${COMPOSE_FILE} stop nexus'
+            }
+        }
+        stage('Terminate Nexus Container') {
+            when { expression { params.ACTION == 'terminate' } }
+            steps {
+                echo "❌ Removing Nexus Repository container and volume..."
+                sh 'sudo docker-compose -f ${COMPOSE_FILE} down -v'
+            }
+        }
+        stage('Show Nexus Status') {
+            steps {
+                echo "📦 Nexus Repository container status:"
+                sh 'sudo docker-compose -f ${COMPOSE_FILE} ps'
+            }
+        }
+    }
+    post {
+        success {
+            echo "✅ Pipeline completed successfully for action: '${params.ACTION}'"
+        }
+        failure {
+            echo "❌ Pipeline failed during action: '${params.ACTION}'"
+        }
+        always {
+            echo "ℹ️ Pipeline finished. Check logs above for details."
+        }
+    }
+}

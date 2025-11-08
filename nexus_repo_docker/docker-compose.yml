@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  nexus:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nexus-repo
+    ports:
+      - "8081:8081"
+    volumes:
+      - nexus-data:/nexus-data
+    environment:
+      - NEXUS_SECURITY_RANDOMPASSWORD=false
+    restart: unless-stopped
+    networks:
+      - sak-network
+
+volumes:
+  nexus-data:
+
+networks:
+  sak-network:
+    external: true

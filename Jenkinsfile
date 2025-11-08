@@ -112,7 +112,7 @@ pipeline {
             steps {
                 echo "Deploying to the Dev Environment....!!!!"
                 sh '''
-                NETWORK_NAME="mysql_db_docker_mysql-network"
+                NETWORK_NAME="sak-network"
                 if sudo docker network inspect "$NETWORK_NAME" >/dev/null 2>&1; then
                 echo "Network '$NETWORK_NAME' exists. Attaching container to it..."
                 else
