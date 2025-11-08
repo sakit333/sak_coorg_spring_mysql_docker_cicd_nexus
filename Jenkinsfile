@@ -1,16 +1,14 @@
 pipeline {
     agent any
 
+    tools {
+        maven 'maven'
+    }
+
     stages {
-        stage('To check'){
+        stage('To Build Jar file'){
             steps{
-                sh """
-                pwd
-                whoami
-                ls -l
-                echo $BUILD_ID
-                echo $JOB_NAME
-                """
+                sh 'mvn clean package -Dskiptests'
             }
         }
     }
